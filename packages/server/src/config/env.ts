@@ -1,10 +1,23 @@
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 const isDevelopment = NODE_ENV === 'development';
 
 if (isDevelopment) {
-  dotenv.config();
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const candidateEnvPaths = [
+    resolve(moduleDir, '../../../../.env'), // repository root
+    resolve(moduleDir, '../../.env'), // packages/server/.env (optional)
+  ];
+
+  for (const envPath of candidateEnvPaths) {
+    if (existsSync(envPath)) {
+      dotenv.config({ path: envPath, override: false });
+    }
+  }
 }
 
 type EnvConfig = {
@@ -34,4 +47,13 @@ export const envFlags = {
   nodeEnv: NODE_ENV,
   isDevelopment,
 };
+
+if (isDevelopment) {
+  console.info('[env] Loaded environment configuration:', {
+    nodeEnv: NODE_ENV,
+    hasGeminiApiKey: Boolean(env.geminiApiKey),
+    fileSearchStoreId: env.fileSearchStoreId ?? '<undefined>',
+    defaultModel: env.defaultModel,
+  });
+}
 

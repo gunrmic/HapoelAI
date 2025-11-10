@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { assertGeminiApiKey, env } from '../config/env.js';
+import { assertGeminiApiKey, env } from '../config/env.ts';
 
 let singleton: GoogleGenAI | undefined;
 

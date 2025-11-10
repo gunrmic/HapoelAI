@@ -9,9 +9,9 @@ import type {
   ImportFileOperation,
   GenerateContentResponse,
 } from '@google/genai';
-import { env } from '../config/env.js';
-import { getGenAiClient } from '../clients/genai.js';
-import { waitForOperation } from '../utils/operations.js';
+import { env } from '../config/env.ts';
+import { getGenAiClient } from '../clients/genai.ts';
+import { waitForOperation } from '../utils/operations.ts';
 import type {
   CitationEntry,
   FileSearchAnswer,
@@ -22,7 +22,7 @@ import type {
   UploadFileToStoreResult,
   UploadFileToStoreParams,
   ImportFileResult,
-} from '../types/fileSearch.js';
+} from '../types/fileSearch.ts';
 
 const DEFAULT_TOP_K = 8;
 

@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Operation } from '@google/genai';
-import { getGenAiClient } from '../clients/genai.js';
-import type { OperationPollOptions } from '../types/fileSearch.js';
+import { getGenAiClient } from '../clients/genai.ts';
+import type { OperationPollOptions } from '../types/fileSearch.ts';
 
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1_000;

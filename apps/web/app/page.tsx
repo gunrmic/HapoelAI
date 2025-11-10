@@ -64,18 +64,13 @@ export default function HomePage() {
     <main className={styles.page}>
       <header className={styles.header}>
         <Image
-          src="/hapoel-placeholder.svg"
+          src="/Hapoel_Tel_Aviv.svg.png"
           alt="Hapoel Tel Aviv Crest"
           width={96}
           height={96}
           priority
         />
-        <h1>Hapoel Tel Aviv AI Desk</h1>
-        <p>
-          Upload official club documents, media guides or trusted sources to power this Retrieval
-          Augmented agent. Ask anything about Hapoel Tel Aviv’s football or basketball teams and get
-          answers with citations.
-        </p>
+        <h1>Hapoel Tel Aviv AI</h1>
       </header>
 
       <section className={styles.card}>

@@ -1,5 +1,5 @@
-import type { NormalizedCitation, QueryFileSearchOptions } from '../types/fileSearch.js';
-import { queryFileSearchStore, normalizeCitations } from '../services/fileSearchService.js';
+import type { NormalizedCitation, QueryFileSearchOptions } from '../types/fileSearch.ts';
+import { queryFileSearchStore, normalizeCitations } from '../services/fileSearchService.ts';
 
 export type AnswerQuestionResult = {
   answer: string;

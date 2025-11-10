@@ -1,4 +1,4 @@
-export * from './agent/fileSearchAgent.js';
-export * from './services/fileSearchService.js';
-export * from './config/env.js';
+export * from './agent/fileSearchAgent.ts';
+export * from './services/fileSearchService.ts';
+export * from './config/env.ts';
 
