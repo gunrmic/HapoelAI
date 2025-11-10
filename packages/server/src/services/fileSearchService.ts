@@ -8,10 +8,12 @@ import type {
   ImportFileResponse,
   ImportFileOperation,
   GenerateContentResponse,
+  ListDocumentsConfig,
+  Document,
 } from '@google/genai';
-import { env } from '../config/env.ts';
-import { getGenAiClient } from '../clients/genai.ts';
-import { waitForOperation } from '../utils/operations.ts';
+import { env } from '../config/env';
+import { getGenAiClient } from '../clients/genai';
+import { waitForOperation } from '../utils/operations';
 import type {
   CitationEntry,
   FileSearchAnswer,
@@ -22,7 +24,7 @@ import type {
   UploadFileToStoreResult,
   UploadFileToStoreParams,
   ImportFileResult,
-} from '../types/fileSearch.ts';
+} from '../types/fileSearch';
 
 const DEFAULT_TOP_K = 8;
 
@@ -94,6 +96,37 @@ export async function uploadFileToStore(
 
   const completed = await waitForOperation(operation, pollOptions);
   return completed.response ?? operation;
+}
+
+export async function listDocumentsInStore(
+  fileSearchStoreName: string,
+  config: ListDocumentsConfig = {},
+): Promise<Document[]> {
+  if (!fileSearchStoreName) {
+    throw new Error('fileSearchStoreName is required');
+  }
+
+  const ai = getGenAiClient();
+  const effectiveConfig: ListDocumentsConfig = { ...config };
+  if (effectiveConfig.pageSize === undefined) {
+    effectiveConfig.pageSize = 20;
+  } else if (effectiveConfig.pageSize < 1) {
+    effectiveConfig.pageSize = 1;
+  } else if (effectiveConfig.pageSize > 20) {
+    effectiveConfig.pageSize = 20;
+  }
+
+  const pager = await ai.fileSearchStores.documents.list({
+    parent: fileSearchStoreName,
+    config: effectiveConfig,
+  });
+
+  const documents: Document[] = [];
+  for await (const document of pager) {
+    documents.push(document);
+  }
+
+  return documents;
 }
 
 export async function importFileFromLibrary(

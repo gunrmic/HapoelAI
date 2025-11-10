@@ -42,4 +42,4 @@ Thumbs.db
 *.swp
 *.swo
 data/*
-
+scripts/*

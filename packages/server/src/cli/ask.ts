@@ -2,8 +2,8 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { answerQuestion } from '../agent/fileSearchAgent.ts';
-import type { QueryFileSearchOptions } from '../types/fileSearch.ts';
+import { answerQuestion } from '../agent/fileSearchAgent';
+import type { QueryFileSearchOptions } from '../types/fileSearch';
 
 type AskCliArgs = QueryFileSearchOptions & {
   _: (string | number)[];

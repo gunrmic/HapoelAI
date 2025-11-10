@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState, useMemo as useMemoAlias } from 'react';
 import styles from './page.module.scss';
 
 type AskResponse = {
@@ -63,13 +63,20 @@ export default function HomePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Image
-          src="/Hapoel_Tel_Aviv.svg.png"
-          alt="Hapoel Tel Aviv Crest"
-          width={96}
-          height={96}
-          priority
-        />
+        <div
+          className={`${styles.logoFrame} ${loading ? styles.logoFrameLoading : ''}`}
+          aria-live="polite"
+          aria-busy={loading}
+        >
+          <Image
+            src="/Hapoel_Tel_Aviv.svg.png"
+            alt="Hapoel Tel Aviv Crest"
+            width={96}
+            height={96}
+            priority
+          />
+          {loading && <span className={styles.spinner} aria-hidden />}
+        </div>
         <h1>Hapoel Tel Aviv AI</h1>
       </header>
 
