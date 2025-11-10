@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+*.pid
+*.pid.lock
+
+# Dependency directories
+node_modules/
+.pnpm-debug.log
+.pnpm-store/
+.npm
+.npm-cache/
+
+# Build outputs
+dist/
+build/
+tmp/
+temp/
+.cache/
+.turbo/
+.next/
+
+# Testing and coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.idea/
+.vscode/
+
+# Misc editor backups
+*~
+*.swp
+*.swo
+data/*
+
