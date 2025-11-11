@@ -8,7 +8,6 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
     "allowJs": false,
     "outDir": "dist",
     "rootDir": "src",
