@@ -1,50 +1,76 @@
-# Hapoel AI Agent
+# Hapoel Tel Aviv AI
 
-Node.js agent that uses Google Gemini FileSearch to answer questions about Hapoel Tel Aviv's basketball and football clubs.
+This repository powers an AI assistant for Hapoel Tel Aviv supporters. It is a PNPM monorepo with two main parts:
 
-## Getting Started
+- `apps/web`: a Next.js 15 application that hosts the public chatbot experience.
+- `packages/server`: a TypeScript library that connects to Google Gemini File Search and serves as the question–answering backend used by both the web app and the CLI utilities.
 
-1. Install dependencies:
+The project lets fans ask about club history, rosters and match stats through a polished web UI or scripted workflows.
+
+## Prerequisites
+
+- Node.js 20+
+- PNPM 9 (the repo declares `packageManager: "pnpm@9.12.0"`)
+- A Google Gemini API key with File Search enabled
+
+## Setup
+
+1. Install all workspace dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
-2. Copy `example.env` to `.env` and fill in the values:
-   - `GEMINI_API_KEY`: Gemini API key (generate in Google AI Studio).
-   - `GEMINI_FILE_SEARCH_STORE_ID`: Optional. Set if reusing an existing FileSearch store.
-3. Review [FileSearch limits and workflows](https://ai.google.dev/gemini-api/docs/file-search?hl=he).
+2. Copy `example.env` to `.env` (or `.env.local`) and provide the following:
+   - `GEMINI_API_KEY` – required
+   - `GEMINI_FILE_SEARCH_STORE_ID` – optional existing store to reuse
+3. (Optional) download raw PDFs or articles into `data/` and use the provided scripts to upload them to Gemini File Search.
 
-After setup you will be able to ask questions via `npm run ask -- "Who is the coach?"` (CLI implementation provided later).
+## Running Locally
 
-## Managing FileSearch Stores
-
-- Create a store once and reuse it by adding its resource name (for example `fileSearchStores/hapoel-store-123`) to `GEMINI_FILE_SEARCH_STORE_ID`.
-- You can programmatically create a store:
+- Start the Next.js experience:
   ```bash
-  node --env-file=.env -e "import('./src/services/fileSearchService.js').then(async ({ createFileSearchStore }) => { const store = await createFileSearchStore('Hapoel knowledge base'); console.log(store.name); });"
+  pnpm --filter @aihapoel/web dev
   ```
-- Upload and index documents directly into a store:
+  Visit `http://localhost:3000` to chat with the assistant.
+
+- Use the CLI to ask questions directly against the agent:
   ```bash
-  node --env-file=.env <<'EOF'
-  import { uploadFileToStore } from './src/services/fileSearchService.js';
-
-  const store = process.env.GEMINI_FILE_SEARCH_STORE_ID;
-  if (!store) throw new Error('Set GEMINI_FILE_SEARCH_STORE_ID to your store resource name.');
-
-  await uploadFileToStore({
-    fileSearchStoreName: store,
-    filePath: './data/Paper_hta_foot_first_years_2015.pdf',
-    displayName: 'Hapoel TA first years',
-  });
-
-  console.log('Upload complete');
-  EOF
+  pnpm --filter @aihapoel/server run ask -- "מי היה הקפטן בעונת 2015/16?"
   ```
-- Long-running uploads are automatically polled until completion through the shared helper in `src/utils/operations.js`.
 
-## Data Preparation Guidelines
+## Production Build
 
-- Supported formats include plain text, HTML, PDF, Markdown and common office document types (see the official FileSearch MIME list) with a maximum file size of **100 MB** per document and up to **1 GB** of indexed content on the free tier [docs](https://ai.google.dev/gemini-api/docs/file-search?hl=he).
-- Break large dossiers into thematic files (≤20 GB per store is recommended for low latency) and ensure consistent naming via the `displayName` parameter when uploading.
-- Add `customMetadata` (e.g. `{ season: '2023-24', sport: 'basketball' }`) when calling `uploadFileToStore` to enable metadata filtering via `--metadataFilter` in the CLI.
-- Maintain a `data/` directory under source control ignore rules to store raw Hapoel material locally and re-run uploads if documents change; FileSearch de-duplicates by resource ID, so new uploads with the same file name create new document versions rather than mutating previous ones.
+```bash
+pnpm build        # compiles the server package and Next.js app
+pnpm --filter @aihapoel/web start  # serves the production build
+```
+
+Deployments on Vercel set the project root to `apps/web` so the Next.js output is detected automatically.
+
+## Managing File Search Content
+
+The `packages/server` workspace exposes utilities for maintaining your Gemini File Search store.
+
+- Upload PDF files listed in `data/`:
+  ```bash
+  pnpm --filter @aihapoel/server run upload-pdfs
+  ```
+- Programmatic helpers live in `packages/server/src/services/fileSearchService.ts` and `packages/server/src/utils/operations.ts`.
+- Long-running uploads are polled until completion; metadata such as season or sport can be attached to documents for richer filtering.
+
+## Project Structure
+
+- `apps/web` – UI built with the Next.js App Router, SCSS modules, and an `/api/ask` route that proxies to the shared server package.
+- `packages/server` – Gemini client, rate limiting helpers, CLI entry points, and shared typing.
+- `scripts/` – utility scripts (for example `download_pdfs.py`) that prepare source documents.
+- `data/` – local storage for raw source material (excluded from git).
+
+## Contributing
+
+1. Create a feature branch.
+2. Run `pnpm lint` and `pnpm build` to ensure quality.
+3. Open a pull request describing the change and any data additions.
+
+## License
+
+This project is provided for internal club use. Contact the maintainers before redistributing or deploying a fork publicly.
 
