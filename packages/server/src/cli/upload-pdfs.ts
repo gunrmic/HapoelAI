@@ -6,11 +6,11 @@ import { fileURLToPath } from 'node:url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
-import { env } from '../config/env.js';
+import { env } from '../config/env';
 import {
   uploadFileToStore,
   listDocumentsInStore,
-} from '../services/fileSearchService.js';
+} from '../services/fileSearchService';
 
 type CliArguments = {
   dir: string;

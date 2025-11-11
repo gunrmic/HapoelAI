@@ -7,6 +7,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@aihapoel/server/*": [
+        "../packages/server/src/*"
       ]
     },
     "target": "ES2017"

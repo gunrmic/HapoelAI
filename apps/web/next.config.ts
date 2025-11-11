@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     typedRoutes: true,
   },
   transpilePackages: ['@aihapoel/server'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

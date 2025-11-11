@@ -273,6 +273,11 @@ function extractCitations(response: GenerateContentResponse): CitationEntry[] {
         }
         seenKeys.add(key);
 
+        const contextText =
+          'text' in context && typeof context.text === 'string'
+            ? context.text
+            : support.segment?.text;
+
         results.push({
           type: 'retrieval',
           candidateIndex,
@@ -280,7 +285,7 @@ function extractCitations(response: GenerateContentResponse): CitationEntry[] {
           supportIndex,
           uri: context.uri,
           title: context.title,
-          text: context.text ?? support.segment?.text,
+          text: contextText,
           segment: support.segment,
           confidenceScores: support.confidenceScores,
         });

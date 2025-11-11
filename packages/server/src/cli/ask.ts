@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import yargs from 'yargs';
+import type { Argv } from 'yargs';
+import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 import { answerQuestion } from '../agent/fileSearchAgent';
-import type { QueryFileSearchOptions } from '../types/fileSearch';
+import type { QueryFileSearchOptions, NormalizedCitation } from '../types/fileSearch';
 
 type AskCliArgs = QueryFileSearchOptions & {
   _: (string | number)[];
@@ -11,7 +12,8 @@ type AskCliArgs = QueryFileSearchOptions & {
 };
 
 async function main(): Promise<void> {
-  const argv = await yargs<AskCliArgs>(hideBin(process.argv))
+  const parser: Argv<AskCliArgs> = yargs(hideBin(process.argv));
+  const argv = await parser
     .scriptName('ask')
     .usage('$0 <question...>')
     .option('store', {
@@ -62,7 +64,7 @@ async function main(): Promise<void> {
 
     if (result.citations.length > 0) {
       console.log('\nReferences:');
-      result.citations.forEach((citation) => {
+      result.citations.forEach((citation: NormalizedCitation) => {
         const title = citation.title ?? citation.uri;
         console.log(`[${citation.label}] ${title ?? 'Unknown source'}`);
         if (citation.uri) {
