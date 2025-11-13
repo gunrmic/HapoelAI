@@ -14,6 +14,7 @@ import type {
 import { env } from '../config/env';
 import { getGenAiClient } from '../clients/genai';
 import { waitForOperation } from '../utils/operations';
+import { retryWithBackoff } from '../utils/retry';
 import type {
   CitationEntry,
   FileSearchAnswer,
@@ -185,28 +186,39 @@ export async function queryFileSearchStore(
   }
 
   const ai = getGenAiClient();
-  const response = await ai.models.generateContent({
-    model,
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: question }],
-      },
-    ],
-    config: {
-      systemInstruction,
-      tools: [
-        {
-          fileSearch: {
-            fileSearchStoreNames: [fileSearchStoreName],
-            topK,
-            metadataFilter,
+  
+  // Retry with exponential backoff for transient errors (503, 429, etc.)
+  const response = await retryWithBackoff(
+    () =>
+      ai.models.generateContent({
+        model,
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: question }],
           },
+        ],
+        config: {
+          systemInstruction,
+          tools: [
+            {
+              fileSearch: {
+                fileSearchStoreNames: [fileSearchStoreName],
+                topK,
+                metadataFilter,
+              },
+            },
+          ],
+          responseModalities: ['TEXT'],
         },
-      ],
-      responseModalities: ['TEXT'],
+      }),
+    {
+      maxRetries: 3,
+      initialDelayMs: 1_000,
+      maxDelayMs: 10_000,
+      backoffMultiplier: 2,
     },
-  });
+  );
 
   return formatFileSearchAnswer(response);
 }

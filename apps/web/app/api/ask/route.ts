@@ -86,9 +86,28 @@ export async function POST(request: Request) {
       })),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected error while contacting the agent.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    let message = 'Unexpected error while contacting the agent.';
+    let status = 500;
+
+    if (error instanceof Error) {
+      message = error.message;
+      
+      // Check for specific error types that should return different status codes
+      const errorMessage = error.message.toLowerCase();
+      if (
+        errorMessage.includes('overloaded') ||
+        errorMessage.includes('unavailable') ||
+        errorMessage.includes('503')
+      ) {
+        // After retries are exhausted, return 503 to indicate service unavailable
+        status = 503;
+        message = 'The AI service is temporarily unavailable. Please try again in a moment.';
+      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        status = 429;
+      }
+    }
+
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
