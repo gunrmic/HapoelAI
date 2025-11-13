@@ -15,6 +15,11 @@
     "references": "References",
     "source": "Source"
   },
+  "tts": {
+    "play": "Read aloud",
+    "pause": "Pause reading",
+    "stop": "Stop reading"
+  },
   "emptyState": {
     "noAnswer": "Your answers will appear here.",
     "suggestions": "Start with season history, iconic players, match recaps, or club records.",
