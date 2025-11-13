@@ -20,6 +20,14 @@
     "pause": "Pause reading",
     "stop": "Stop reading"
   },
+  "speech": {
+    "startListening": "Start voice input",
+    "stopListening": "Stop voice input",
+    "notSupported": "Voice input is not supported in your browser",
+    "microphonePermissionError": "Microphone permission denied. Please allow microphone access.",
+    "recognitionError": "Speech recognition error. Please try again.",
+    "startError": "Could not start voice input. Please try again."
+  },
   "emptyState": {
     "noAnswer": "Your answers will appear here.",
     "suggestions": "Start with season history, iconic players, match recaps, or club records.",

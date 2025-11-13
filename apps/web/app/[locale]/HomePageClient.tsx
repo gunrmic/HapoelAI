@@ -21,6 +21,55 @@ type AskError = {
   error: string;
 };
 
+// Speech Recognition types
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare var SpeechRecognition: {
+  prototype: SpeechRecognition;
+  new (): SpeechRecognition;
+};
+
+declare var webkitSpeechRecognition: {
+  prototype: SpeechRecognition;
+  new (): SpeechRecognition;
+};
+
 export default function HomePageClient() {
   const t = useTranslations();
   const locale = useLocale() as Locale;
@@ -30,8 +79,10 @@ export default function HomePageClient() {
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const hasAnswer = useMemo(() => Boolean(answer?.answer), [answer]);
 
@@ -55,14 +106,77 @@ export default function HomePageClient() {
     }
   }, []);
 
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = 
+        (window as any).SpeechRecognition || 
+        (window as any).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+        
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join('');
+          setQuestion(prev => prev ? `${prev} ${transcript}` : transcript);
+          setIsListening(false);
+        };
+        
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          if (event.error === 'not-allowed') {
+            setError(t('speech.microphonePermissionError'));
+          } else if (event.error === 'no-speech') {
+            setIsListening(false);
+          } else {
+            setError(t('speech.recognitionError'));
+          }
+        };
+        
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+        
+        recognitionRef.current = recognition;
+      }
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [t]);
+
+  // Update speech recognition language when locale changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      const langCode = locale === 'he' ? 'he-IL' : 'en-US';
+      recognitionRef.current.lang = langCode;
+    }
+  }, [locale]);
+
   // Cleanup speech when answer changes, locale changes, or component unmounts
   useEffect(() => {
     return () => {
       if (synthRef.current) {
         synthRef.current.cancel();
       }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
       setIsSpeaking(false);
       setIsPaused(false);
+      setIsListening(false);
       utteranceRef.current = null;
     };
   }, [answer, locale]);
@@ -166,6 +280,29 @@ export default function HomePageClient() {
     }
   };
 
+  const handleStartListening = () => {
+    if (!recognitionRef.current) {
+      setError(t('speech.notSupported'));
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        setError(null); // Clear any previous errors
+        const langCode = locale === 'he' ? 'he-IL' : 'en-US';
+        recognitionRef.current.lang = langCode;
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error('Error starting speech recognition:', err);
+        setError(t('speech.startError'));
+        setIsListening(false);
+      }
+    }
+  };
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = question.trim();
@@ -223,15 +360,39 @@ export default function HomePageClient() {
 
       <section className={styles.card}>
         <form className={styles.form} onSubmit={handleSubmit}>
-          <textarea
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder={t('form.placeholder')}
-            disabled={loading}
-          />
+          <div className={styles.textareaWrapper}>
+            <textarea
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder={t('form.placeholder')}
+              disabled={loading || isListening}
+            />
+            {typeof window !== 'undefined' && 
+             ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
+              <button
+                type="button"
+                onClick={handleStartListening}
+                className={`${styles.micButton} ${isListening ? styles.micButtonActive : ''}`}
+                disabled={loading}
+                aria-label={isListening ? t('speech.stopListening') : t('speech.startListening')}
+                title={isListening ? t('speech.stopListening') : t('speech.startListening')}
+              >
+                {isListening ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="6" width="12" height="12" rx="2"/>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
 
           <div className={styles.formActions}>
-            <button type="submit" disabled={loading}>
+            <button type="submit" disabled={loading || isListening}>
               {loading ? t('form.thinking') : t('form.submitButton')}
             </button>
           </div>
