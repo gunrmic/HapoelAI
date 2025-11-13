@@ -3,9 +3,11 @@
 import Image from 'next/image';
 import { FormEvent, useMemo, useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import styles from './page.module.scss';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { type Locale } from '@/i18n';
+import { getRandomQuestions, getRandomQuestionExcluding } from '../constants/questions';
 
 type AskResponse = {
   answer: string;
@@ -72,7 +74,8 @@ declare var webkitSpeechRecognition: {
 
 export default function HomePageClient() {
   const t = useTranslations();
-  const locale = useLocale() as Locale;
+  const localeFromHook = useLocale() as Locale;
+  const pathname = usePathname();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<AskResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,11 +83,32 @@ export default function HomePageClient() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [randomQuestions, setRandomQuestions] = useState<string[]>([]);
+  const [clickedQuestionIndex, setClickedQuestionIndex] = useState<number | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
+  // Determine locale from pathname to ensure it's always accurate
+  const locale = useMemo(() => {
+    const pathLocale = pathname.split('/')[1];
+    if (pathLocale === 'en' || pathLocale === 'he') {
+      return pathLocale as Locale;
+    }
+    return localeFromHook;
+  }, [pathname, localeFromHook]);
+
   const hasAnswer = useMemo(() => Boolean(answer?.answer), [answer]);
+
+  // Initialize random questions when component mounts or locale changes
+  useEffect(() => {
+    const newQuestions = getRandomQuestions(locale, 4);
+    setRandomQuestions(newQuestions);
+    // Clear answer when locale changes so user sees fresh questions
+    setAnswer(null);
+    setQuestion('');
+    setError(null);
+  }, [locale]);
 
   // Initialize speech synthesis and load voices
   useEffect(() => {
@@ -303,15 +327,15 @@ export default function HomePageClient() {
     }
   };
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = question.trim();
+  async function askQuestion(questionText: string) {
+    const trimmed = questionText.trim();
 
     if (!trimmed) {
       setError(t('form.emptyQuestionError'));
       return;
     }
 
+    setQuestion(trimmed);
     setLoading(true);
     setError(null);
 
@@ -329,16 +353,39 @@ export default function HomePageClient() {
 
       const payload: AskResponse = await response.json();
       setAnswer(payload);
+      
+      // Replace the clicked question with a new one if it was from the suggested questions
+      if (clickedQuestionIndex !== null) {
+        setRandomQuestions(prev => {
+          const newQuestions = [...prev];
+          const newQuestion = getRandomQuestionExcluding(locale, newQuestions);
+          newQuestions[clickedQuestionIndex] = newQuestion;
+          return newQuestions;
+        });
+        setClickedQuestionIndex(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('emptyState.genericError'));
       setAnswer(null);
+      setClickedQuestionIndex(null);
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await askQuestion(question);
+  }
+
+  function handleQuestionClick(questionText: string, index: number) {
+    setClickedQuestionIndex(index);
+    askQuestion(questionText);
+  }
+
   return (
     <main className={styles.page}>
+      <LanguageSwitcher />
       <header className={styles.header}>
         <div
           className={`${styles.logoFrame} ${loading ? styles.logoFrameLoading : ''}`}
@@ -355,7 +402,6 @@ export default function HomePageClient() {
           {loading && <span className={styles.spinner} aria-hidden />}
         </div>
         <h1>{t('common.title')}</h1>
-        <LanguageSwitcher />
       </header>
 
       <section className={styles.card}>
@@ -405,10 +451,22 @@ export default function HomePageClient() {
           </div>
         )}
 
-        {!error && !hasAnswer && (
-          <div className={styles.emptyState}>
-            <strong>{t('emptyState.noAnswer')}</strong>
-            <span>{t('emptyState.suggestions')}</span>
+        {!error && randomQuestions.length > 0 && (
+          <div className={styles.suggestedQuestions}>
+            <h3 className={styles.suggestedQuestionsTitle}>{t('suggestedQuestions.title')}</h3>
+            <div className={styles.questionsList}>
+              {randomQuestions.map((q, index) => (
+                <button
+                  key={`${q}-${index}`}
+                  type="button"
+                  onClick={() => handleQuestionClick(q, index)}
+                  className={styles.questionButton}
+                  disabled={loading}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

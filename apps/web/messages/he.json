@@ -35,6 +35,9 @@
     "genericError": "משהו השתבש, אנא נסה שוב.",
     "unexpectedError": "שגיאת שרת בלתי צפויה."
   },
+  "suggestedQuestions": {
+    "title": "שאלות מומלצות"
+  },
   "language": {
     "switch": "החלף שפה",
     "english": "English",

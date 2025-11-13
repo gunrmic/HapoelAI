@@ -35,6 +35,9 @@
     "genericError": "Something went wrong, please try again.",
     "unexpectedError": "Unexpected server error."
   },
+  "suggestedQuestions": {
+    "title": "Suggested Questions"
+  },
   "language": {
     "switch": "Switch Language",
     "english": "English",

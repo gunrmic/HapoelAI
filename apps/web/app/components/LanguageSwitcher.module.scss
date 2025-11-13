@@ -1,7 +1,16 @@
+.languageSwitcher {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 1000;
+}
+
 .languageButton {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
   border: 1px solid rgba(250, 250, 250, 0.2);
   background: rgba(250, 250, 250, 0.05);
   color: var(--hapoel-light);
@@ -9,6 +18,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.9rem;
+  backdrop-filter: blur(10px);
 
   &:hover {
     background: rgba(250, 250, 250, 0.1);
@@ -18,6 +28,79 @@
 
   &:active {
     transform: translateY(0);
+  }
+}
+
+.flag {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: rgba(250, 250, 250, 0.7);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 140px;
+  background: var(--hapoel-gray);
+  border: 1px solid rgba(250, 250, 250, 0.2);
+  border-radius: 8px;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--hapoel-light);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: left;
+  width: 100%;
+
+  // RTL support
+  [dir='rtl'] & {
+    text-align: right;
+  }
+
+  &:hover {
+    background: rgba(250, 250, 250, 0.1);
+  }
+
+  &.active {
+    background: rgba(210, 10, 44, 0.15);
+    color: var(--hapoel-light);
+  }
+
+  .flag {
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .languageSwitcher {
+    top: 1rem;
+    left: 1rem;
   }
 }
 
