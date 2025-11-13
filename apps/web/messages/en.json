@@ -1,0 +1,31 @@
+{
+  "common": {
+    "logoAlt": "Hapoel Tel Aviv Crest",
+    "title": "Hapoel Tel Aviv AI",
+    "description": "Ask anything about Hapoel Tel Aviv basketball or football and get instant answers."
+  },
+  "form": {
+    "placeholder": "e.g. Who was the captain of Hapoel Tel Aviv in the 2015/16 season?",
+    "submitButton": "Ask Hapoel AI",
+    "thinking": "Thinking…",
+    "emptyQuestionError": "Please enter a question about Hapoel Tel Aviv first."
+  },
+  "answer": {
+    "title": "Answer",
+    "references": "References",
+    "source": "Source"
+  },
+  "emptyState": {
+    "noAnswer": "Your answers will appear here.",
+    "suggestions": "Start with season history, iconic players, match recaps, or club records.",
+    "errorTitle": "We could not answer that.",
+    "genericError": "Something went wrong, please try again.",
+    "unexpectedError": "Unexpected server error."
+  },
+  "language": {
+    "switch": "Switch Language",
+    "english": "English",
+    "hebrew": "עברית"
+  }
+}
+

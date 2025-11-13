@@ -1,14 +1,15 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig: NextConfig = {
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
   transpilePackages: ['@aihapoel/server'],
   eslint: {
     ignoreDuringBuilds: true,
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
 

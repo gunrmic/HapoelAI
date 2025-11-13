@@ -43,3 +43,5 @@ Thumbs.db
 *.swo
 data/*
 scripts/*
+packages/server/src/cli/upload-pdfs.ts
+packages/server/src/cli/scrape-wiki.ts

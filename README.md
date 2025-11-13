@@ -57,6 +57,14 @@ The `packages/server` workspace exposes utilities for maintaining your Gemini Fi
 - Programmatic helpers live in `packages/server/src/services/fileSearchService.ts` and `packages/server/src/utils/operations.ts`.
 - Long-running uploads are polled until completion; metadata such as season or sport can be attached to documents for richer filtering.
 
+## Archiving Wiki Content
+
+- Crawl and archive the Hapoel supporters' wiki to HTML under `data/wiki.red-fans.com`:
+  ```bash
+  pnpm --filter @aihapoel/server run scrape-wiki
+  ```
+  Pass `--output`, `--delay`, or `--max-pages` flags to customize the destination directory, throttle interval (ms), or page limit. Each stored HTML file is capped at 1 GB; oversized responses are skipped automatically.
+
 ## Project Structure
 
 - `apps/web` – UI built with the Next.js App Router, SCSS modules, and an `/api/ask` route that proxies to the shared server package.

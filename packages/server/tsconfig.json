@@ -10,10 +10,12 @@
     "resolveJsonModule": true,
     "allowJs": false,
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["node"]
+    "rootDir": ".",
+    "rootDirs": ["src", "test"],
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./test/types"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
 

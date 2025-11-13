@@ -7,21 +7,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@aihapoel/server": "workspace:*",
     "next": "^15.0.0",
+    "next-intl": "^4.5.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sass": "^1.79.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.2",
     "@tsconfig/next": "^2.0.3",
     "@types/node": "^22.8.6",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }
-
