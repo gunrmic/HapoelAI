@@ -28,6 +28,7 @@ coverage/
 .env
 .env.*
 !.env.example
+example.env
 
 # System files
 .DS_Store
@@ -45,3 +46,5 @@ data/*
 scripts/*
 packages/server/src/cli/upload-pdfs.ts
 packages/server/src/cli/scrape-wiki.ts
+packages/server/src/cli/manage-stores.ts
+packages/server/src/cli/check-and-upload.ts

@@ -11,6 +11,8 @@
     "ask": "tsx ./src/cli/ask.ts",
     "upload-pdfs": "tsx ./src/cli/upload-pdfs.ts",
     "scrape-wiki": "tsx ./src/cli/scrape-wiki.ts",
+    "manage-stores": "tsx ./src/cli/manage-stores.ts",
+    "check-and-upload": "tsx ./src/cli/check-and-upload.ts",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage"

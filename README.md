@@ -50,6 +50,42 @@ Deployments on Vercel set the project root to `apps/web` so the Next.js output i
 
 The `packages/server` workspace exposes utilities for maintaining your Gemini File Search store.
 
+### Storage Limits
+
+Each file search store has a 1GB storage limit. If you need more storage:
+
+1. **Create a new store** for additional documents:
+   ```bash
+   pnpm --filter @aihapoel/server run manage-stores create "Store Name"
+   ```
+
+2. **List all stores** to see what you have:
+   ```bash
+   pnpm --filter @aihapoel/server run manage-stores list
+   ```
+
+3. **Check store usage** to see how much space is used:
+   ```bash
+   pnpm --filter @aihapoel/server run manage-stores info
+   ```
+
+4. **Upload to the new store**:
+   ```bash
+   pnpm --filter @aihapoel/server run upload-pdfs --store "stores/your-new-store-id"
+   ```
+
+5. **Use multiple stores** by setting `GEMINI_FILE_SEARCH_STORE_ID` to a comma-separated list:
+   ```bash
+   GEMINI_FILE_SEARCH_STORE_ID="stores/store1,stores/store2" pnpm --filter @aihapoel/server run ask -- "Your question"
+   ```
+
+   Or in your `.env` file:
+   ```
+   GEMINI_FILE_SEARCH_STORE_ID=stores/store1,stores/store2
+   ```
+
+The query system will automatically search across all specified stores, so you can keep all your documents accessible without hitting the 1GB limit per store.
+
 - Upload PDF files listed in `data/`:
   ```bash
   pnpm --filter @aihapoel/server run upload-pdfs

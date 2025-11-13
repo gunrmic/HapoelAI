@@ -50,6 +50,8 @@ export type QueryFileSearchOptions = {
   topK?: NonNullable<FileSearch['topK']>;
   metadataFilter?: FileSearch['metadataFilter'];
   systemInstruction?: string;
+  enableWebGrounding?: boolean;
+  webGroundingSite?: string;
 };
 
 export type FileSearchAnswer = {

@@ -6,7 +6,8 @@
     "build": "pnpm --filter @aihapoel/web run build",
     "dev:server": "pnpm --filter @aihapoel/server run ask",
     "dev:web": "pnpm --filter @aihapoel/web run dev",
-    "ask": "pnpm --filter @aihapoel/server run ask"
+    "ask": "pnpm --filter @aihapoel/server run ask",
+    "check-and-upload": "pnpm --filter @aihapoel/server run check-and-upload"
   },
   "devDependencies": {
     "eslint": "^9.13.0",

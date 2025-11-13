@@ -26,6 +26,13 @@ const DEFAULT_RETRYABLE_ERROR_MESSAGES = [
   'gateway timeout',
 ];
 
+const NON_RETRYABLE_ERROR_MESSAGES = [
+  'storage limit',
+  'reached the storage limit',
+  'resource exhausted',
+  'quota exceeded',
+];
+
 function isRetryableError(error: unknown, options: RetryOptions): boolean {
   const {
     retryableStatusCodes = DEFAULT_RETRYABLE_STATUS_CODES,
@@ -39,16 +46,32 @@ function isRetryableError(error: unknown, options: RetryOptions): boolean {
   const errorMessage = error.message.toLowerCase();
   const errorString = String(error).toLowerCase();
 
+  // First check for non-retryable errors (permanent failures)
+  for (const keyword of NON_RETRYABLE_ERROR_MESSAGES) {
+    if (errorMessage.includes(keyword) || errorString.includes(keyword)) {
+      return false; // Don't retry permanent errors like storage limits
+    }
+  }
+
   // Try to parse JSON from error message (Google APIs sometimes return JSON in error messages)
   try {
     // Look for JSON objects in the error message
     const jsonMatch = error.message.match(/\{[\s\S]*"code"[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
+      // RESOURCE_EXHAUSTED with storage limit is not retryable
+      if (parsed.status === 'RESOURCE_EXHAUSTED') {
+        const message = (parsed.message || '').toLowerCase();
+        if (message.includes('storage limit') || message.includes('reached the storage limit')) {
+          return false; // Don't retry storage limit errors
+        }
+        // Other RESOURCE_EXHAUSTED errors might be retryable (like rate limits)
+        return true;
+      }
       if (parsed.code && retryableStatusCodes.includes(parsed.code)) {
         return true;
       }
-      if (parsed.status === 'UNAVAILABLE' || parsed.status === 'RESOURCE_EXHAUSTED') {
+      if (parsed.status === 'UNAVAILABLE') {
         return true;
       }
     }
