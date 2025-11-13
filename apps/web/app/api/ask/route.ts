@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { answerQuestion } from '@aihapoel/server';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 export const runtime = 'nodejs';
 
@@ -58,6 +60,90 @@ function rateLimitClient(identifier: string): { allowed: boolean; message?: stri
   return { allowed: true };
 }
 
+type BlacklistEntry = {
+  question: string;
+  image: string;
+};
+
+function loadBlacklist(): BlacklistEntry[] {
+  try {
+    // Try multiple possible paths
+    const possiblePaths = [
+      join(process.cwd(), 'apps/web/app/constants/blacklist.json'),
+      join(process.cwd(), 'app/constants/blacklist.json'),
+      join(__dirname, '../constants/blacklist.json'),
+    ];
+    
+    let blacklistPath: string | null = null;
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        blacklistPath = path;
+        break;
+      }
+    }
+    
+    if (!blacklistPath) {
+      console.error('Blacklist file not found. Tried paths:', possiblePaths);
+      return [];
+    }
+    
+    const blacklistContent = readFileSync(blacklistPath, 'utf-8');
+    const blacklist = JSON.parse(blacklistContent) as BlacklistEntry[];
+    
+    if (!Array.isArray(blacklist)) {
+      console.error('Blacklist is not an array:', typeof blacklist);
+      return [];
+    }
+    
+    console.log('Loaded blacklist with', blacklist.length, 'entries');
+    return blacklist;
+  } catch (error) {
+    console.error('Error loading blacklist:', error);
+    return [];
+  }
+}
+
+function extractWords(text: string): string[] {
+  // Split by whitespace, punctuation, and normalize
+  // This works for both Hebrew and English
+  // For Hebrew, we don't need toLowerCase but it doesn't hurt
+  const words = text
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      // Remove punctuation and diacritics, keep only letters and numbers
+      const cleaned = word.replace(/[^\p{L}\p{N}]/gu, '');
+      // Normalize Hebrew text (remove diacritics for better matching)
+      return cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    })
+    .filter((word) => word.length > 0); // Remove empty strings
+  
+  return words;
+}
+
+function allWordsPresent(blacklistQuestion: string, askedQuestion: string): boolean {
+  const blacklistWords = extractWords(blacklistQuestion);
+  const askedWords = extractWords(askedQuestion);
+  
+  // Debug logging (can be removed in production)
+  if (blacklistWords.length > 0) {
+    console.log('Blacklist words:', blacklistWords);
+    console.log('Asked words:', askedWords);
+    console.log('All words present:', blacklistWords.every((word) => askedWords.includes(word)));
+  }
+  
+  // Check if all words from blacklist question appear in asked question
+  return blacklistWords.every((word) => askedWords.includes(word));
+}
+
+function findBlacklistEntry(question: string, blacklist: BlacklistEntry[]): BlacklistEntry | null {
+  return (
+    blacklist.find(
+      (entry) => allWordsPresent(entry.question, question)
+    ) || null
+  );
+}
+
 export async function POST(request: Request) {
   const identifier = getClientIdentifier(request);
   const rateLimitResult = rateLimitClient(identifier);
@@ -72,6 +158,16 @@ export async function POST(request: Request) {
 
   if (!question || typeof question !== 'string' || !question.trim()) {
     return NextResponse.json({ error: 'Question is required.' }, { status: 400 });
+  }
+
+  // Check if question is blacklisted
+  const blacklist = loadBlacklist();
+  const blacklistEntry = findBlacklistEntry(question, blacklist);
+  if (blacklistEntry && blacklistEntry.image) {
+    console.log('Question matched blacklist, returning image:', blacklistEntry.image);
+    return NextResponse.json({
+      image: blacklistEntry.image,
+    });
   }
 
   try {

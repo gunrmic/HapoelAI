@@ -10,8 +10,9 @@ import { type Locale } from '@/i18n';
 import { getRandomQuestions, getRandomQuestionExcluding } from '../constants/questions';
 
 type AskResponse = {
-  answer: string;
-  citations: Array<{
+  answer?: string;
+  image?: string;
+  citations?: Array<{
     label: number;
     uri?: string;
     title?: string;
@@ -85,6 +86,7 @@ export default function HomePageClient() {
   const [isListening, setIsListening] = useState(false);
   const [randomQuestions, setRandomQuestions] = useState<string[]>([]);
   const [clickedQuestionIndex, setClickedQuestionIndex] = useState<number | null>(null);
+  const [isSpeechRecognitionAvailable, setIsSpeechRecognitionAvailable] = useState(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -98,7 +100,7 @@ export default function HomePageClient() {
     return localeFromHook;
   }, [pathname, localeFromHook]);
 
-  const hasAnswer = useMemo(() => Boolean(answer?.answer), [answer]);
+  const hasAnswer = useMemo(() => Boolean(answer?.answer || answer?.image), [answer]);
 
   // Initialize random questions when component mounts or locale changes
   useEffect(() => {
@@ -136,6 +138,8 @@ export default function HomePageClient() {
       const SpeechRecognition = 
         (window as any).SpeechRecognition || 
         (window as any).webkitSpeechRecognition;
+      
+      setIsSpeechRecognitionAvailable(!!SpeechRecognition);
       
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -356,10 +360,13 @@ export default function HomePageClient() {
       
       // Replace the clicked question with a new one if it was from the suggested questions
       if (clickedQuestionIndex !== null) {
+        const currentIndex = clickedQuestionIndex;
         setRandomQuestions(prev => {
+          // Create a new array to ensure React detects the change
           const newQuestions = [...prev];
+          // Get a new question that's not in the current list (excluding the one being replaced)
           const newQuestion = getRandomQuestionExcluding(locale, newQuestions);
-          newQuestions[clickedQuestionIndex] = newQuestion;
+          newQuestions[currentIndex] = newQuestion;
           return newQuestions;
         });
         setClickedQuestionIndex(null);
@@ -413,8 +420,7 @@ export default function HomePageClient() {
               placeholder={t('form.placeholder')}
               disabled={loading || isListening}
             />
-            {typeof window !== 'undefined' && 
-             ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
+            {isSpeechRecognitionAvailable && (
               <button
                 type="button"
                 onClick={handleStartListening}
@@ -457,7 +463,7 @@ export default function HomePageClient() {
             <div className={styles.questionsList}>
               {randomQuestions.map((q, index) => (
                 <button
-                  key={`${q}-${index}`}
+                  key={`${index}-${q.substring(0, 20)}`}
                   type="button"
                   onClick={() => handleQuestionClick(q, index)}
                   className={styles.questionButton}
@@ -472,63 +478,87 @@ export default function HomePageClient() {
 
         {hasAnswer && answer && (
           <div className={styles.answer}>
-            <div className={styles.answerHeader}>
-              <h2>{t('answer.title')}</h2>
-              {typeof window !== 'undefined' && 'speechSynthesis' in window && (
-                <div className={styles.ttsControls}>
-                  <button
-                    type="button"
-                    onClick={handleSpeak}
-                    className={styles.ttsButton}
-                    aria-label={isSpeaking && !isPaused ? t('tts.pause') : t('tts.play')}
-                    title={isSpeaking && !isPaused ? t('tts.pause') : t('tts.play')}
-                  >
-                    {isSpeaking && !isPaused ? (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M5.5 3.5A.5.5 0 0 1 6 4v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm5 0A.5.5 0 0 1 11 4v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/>
-                      </svg>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                      </svg>
-                    )}
-                  </button>
-                  {isSpeaking && (
-                    <button
-                      type="button"
-                      onClick={handleStop}
-                      className={styles.ttsButton}
-                      aria-label={t('tts.stop')}
-                      title={t('tts.stop')}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
-                      </svg>
-                    </button>
+            {answer.image ? (
+              <div className={styles.imageResponse}>
+                {answer.image.startsWith('http://') || answer.image.startsWith('https://') ? (
+                  // Use regular img tag for external URLs
+                  <img
+                    src={answer.image}
+                    alt="Response image"
+                    style={{ width: '100%', height: 'auto', maxWidth: '100%' }}
+                  />
+                ) : (
+                  // Use Next.js Image for internal URLs
+                  <Image
+                    src={answer.image}
+                    alt="Response image"
+                    width={800}
+                    height={600}
+                    style={{ width: '100%', height: 'auto', maxWidth: '100%' }}
+                  />
+                )}
+              </div>
+            ) : (
+              <>
+                <div className={styles.answerHeader}>
+                  <h2>{t('answer.title')}</h2>
+                  {typeof window !== 'undefined' && 'speechSynthesis' in window && (
+                    <div className={styles.ttsControls}>
+                      <button
+                        type="button"
+                        onClick={handleSpeak}
+                        className={styles.ttsButton}
+                        aria-label={isSpeaking && !isPaused ? t('tts.pause') : t('tts.play')}
+                        title={isSpeaking && !isPaused ? t('tts.pause') : t('tts.play')}
+                      >
+                        {isSpeaking && !isPaused ? (
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M5.5 3.5A.5.5 0 0 1 6 4v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm5 0A.5.5 0 0 1 11 4v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/>
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                          </svg>
+                        )}
+                      </button>
+                      {isSpeaking && (
+                        <button
+                          type="button"
+                          onClick={handleStop}
+                          className={styles.ttsButton}
+                          aria-label={t('tts.stop')}
+                          title={t('tts.stop')}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-            <p>{answer.answer}</p>
+                <p>{answer.answer}</p>
 
-            {answer.citations.length > 0 && (
-              <div className={styles.references}>
-                <h3>{t('answer.references')}</h3>
-                <ul>
-                  {answer.citations.map((citation) => (
-                    <li key={citation.label}>
-                      {citation.uri ? (
-                        <a href={citation.uri} target="_blank" rel="noreferrer">
-                          [{citation.label}] {citation.title ?? citation.uri}
-                        </a>
-                      ) : (
-                        <span>[{citation.label}] {citation.title ?? t('answer.source')}</span>
-                      )}
-                      {citation.text && <span>{citation.text}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {answer.citations && answer.citations.length > 0 && (
+                  <div className={styles.references}>
+                    <h3>{t('answer.references')}</h3>
+                    <ul>
+                      {answer.citations.map((citation) => (
+                        <li key={citation.label}>
+                          {citation.uri ? (
+                            <a href={citation.uri} target="_blank" rel="noreferrer">
+                              [{citation.label}] {citation.title ?? citation.uri}
+                            </a>
+                          ) : (
+                            <span>[{citation.label}] {citation.title ?? t('answer.source')}</span>
+                          )}
+                          {citation.text && <span>{citation.text}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
