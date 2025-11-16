@@ -154,7 +154,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { question } = (await request.json().catch(() => ({}))) as { question?: string };
+  const { question, locale } = (await request.json().catch(() => ({}))) as {
+    question?: string;
+    locale?: string;
+  };
 
   if (!question || typeof question !== 'string' || !question.trim()) {
     return NextResponse.json({ error: 'Question is required.' }, { status: 400 });
@@ -171,7 +174,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await answerQuestion(question);
+    // Guide the model to respond in the user's locale
+    const systemInstruction =
+      locale === 'he'
+        ? 'ענה בעברית ברורה וקצרה. כאשר יש ציטוטים או כותרות באנגלית, ניתן להשאירם באנגלית, אך את ההסברים יש לנסח בעברית.'
+        : 'Answer concisely in English.';
+
+    const result = await answerQuestion(question, { systemInstruction });
     return NextResponse.json({
       answer: result.answer,
       citations: result.citations.map(({ label, title, uri, text }) => ({

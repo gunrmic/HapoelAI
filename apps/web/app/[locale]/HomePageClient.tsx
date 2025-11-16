@@ -347,7 +347,7 @@ export default function HomePageClient() {
       const response = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify({ question: trimmed, locale }),
       });
 
       if (!response.ok) {
