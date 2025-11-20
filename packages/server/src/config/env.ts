@@ -24,8 +24,6 @@ type EnvConfig = {
   geminiApiKey?: string;
   fileSearchStoreId?: string;
   defaultModel: string;
-  enableWebGrounding: boolean;
-  webGroundingSite?: string;
 };
 
 export const env: EnvConfig = {
@@ -33,8 +31,6 @@ export const env: EnvConfig = {
   fileSearchStoreId:
     process.env.GEMINI_FILE_SEARCH_STORE_ID ?? process.env.VERCEL_GEMINI_FILE_SEARCH_STORE_ID,
   defaultModel: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
-  enableWebGrounding: process.env.ENABLE_WEB_GROUNDING === 'true' || process.env.ENABLE_WEB_GROUNDING === '1',
-  webGroundingSite: process.env.WEB_GROUNDING_SITE,
 };
 
 export function assertGeminiApiKey(): string {
@@ -58,8 +54,6 @@ if (isDevelopment) {
     hasGeminiApiKey: Boolean(env.geminiApiKey),
     fileSearchStoreId: env.fileSearchStoreId ?? '<undefined>',
     defaultModel: env.defaultModel,
-    enableWebGrounding: env.enableWebGrounding,
-    webGroundingSite: env.webGroundingSite ?? '<undefined>',
   });
 }
 

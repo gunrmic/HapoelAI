@@ -50,8 +50,6 @@ export type QueryFileSearchOptions = {
   topK?: NonNullable<FileSearch['topK']>;
   metadataFilter?: FileSearch['metadataFilter'];
   systemInstruction?: string;
-  enableWebGrounding?: boolean;
-  webGroundingSite?: string;
 };
 
 export type FileSearchAnswer = {
@@ -86,6 +84,6 @@ export type NormalizedCitation = {
   label: number;
 };
 
-export type GroundingContext = GroundingChunk['retrievedContext'] | GroundingChunk['web'] | GroundingChunk['maps'];
+export type GroundingContext = GroundingChunk['retrievedContext'] | GroundingChunk['maps'];
 
 

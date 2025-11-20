@@ -177,8 +177,6 @@ export async function queryFileSearchStore(
     topK = DEFAULT_TOP_K,
     metadataFilter,
     systemInstruction,
-    enableWebGrounding = env.enableWebGrounding,
-    webGroundingSite = env.webGroundingSite,
   } = options;
 
   // Support multiple stores: use provided store, or parse comma-separated env var, or single env var
@@ -198,7 +196,7 @@ export async function queryFileSearchStore(
   }
 
   // Build tools array - at least one tool must be enabled
-  const tools: Array<{ fileSearch?: any; grounding?: any }> = [];
+  const tools: Array<{ fileSearch?: any }> = [];
 
   // Add file search tool if stores are available
   if (storeNames.length > 0) {
@@ -211,46 +209,14 @@ export async function queryFileSearchStore(
     });
   }
 
-  // Add web grounding tool if enabled
-  if (enableWebGrounding) {
-    tools.push({
-      grounding: {},
-    });
-  }
-
   // Ensure at least one tool is enabled
   if (tools.length === 0) {
     throw new Error(
-      'No search tools enabled. Either specify a FileSearch store (via fileSearchStoreName or GEMINI_FILE_SEARCH_STORE_ID) or enable web grounding (via enableWebGrounding option or ENABLE_WEB_GROUNDING env var).',
+      'No FileSearch store specified. Please provide a FileSearch store via fileSearchStoreName option or GEMINI_FILE_SEARCH_STORE_ID environment variable.',
     );
   }
 
   const ai = getGenAiClient();
-  
-  // If web grounding is enabled with a specific site, modify the question and system instruction
-  let enhancedQuestion = question;
-  let enhancedSystemInstruction = systemInstruction;
-  
-  if (enableWebGrounding && webGroundingSite) {
-    try {
-      const siteUrl = new URL(webGroundingSite.startsWith('http') ? webGroundingSite : `https://${webGroundingSite}`);
-      const siteDomain = siteUrl.hostname;
-      
-      // Enhance the question to emphasize searching only the specified site
-      enhancedQuestion = `${question}\n\nPlease search specifically on ${siteDomain} (${siteUrl.toString()}) for this information.`;
-      
-      // Update system instruction to restrict web search to the specified domain
-      enhancedSystemInstruction = systemInstruction 
-        ? `${systemInstruction}\n\nIMPORTANT: When using web search (grounding), ONLY search and reference content from ${siteDomain}. Ignore results from any other domains.`
-        : `IMPORTANT: When using web search (grounding), ONLY search and reference content from ${siteDomain}. Ignore results from any other domains.`;
-      
-      if (envFlags.isDevelopment) {
-        console.info(`[web-grounding] Restricting web search to: ${siteDomain}`);
-      }
-    } catch (error) {
-      console.warn(`[web-grounding] Invalid webGroundingSite URL: ${webGroundingSite}. Using default behavior.`);
-    }
-  }
   
   // Retry with exponential backoff for transient errors (503, 429, etc.)
   const response = await retryWithBackoff(
@@ -260,11 +226,11 @@ export async function queryFileSearchStore(
         contents: [
           {
             role: 'user',
-            parts: [{ text: enhancedQuestion }],
+            parts: [{ text: question }],
           },
         ],
         config: {
-          systemInstruction: enhancedSystemInstruction,
+          systemInstruction,
           tools,
           responseModalities: ['TEXT'],
         },
@@ -278,25 +244,6 @@ export async function queryFileSearchStore(
   );
 
   const answer = formatFileSearchAnswer(response);
-  
-  // Filter citations to only include results from the specified site if web grounding is enabled
-  if (enableWebGrounding && webGroundingSite) {
-    try {
-      const siteUrl = new URL(webGroundingSite.startsWith('http') ? webGroundingSite : `https://${webGroundingSite}`);
-      const siteDomain = siteUrl.hostname;
-      
-      const beforeFilterCount = answer.citations.length;
-      answer.citations = filterCitationsByDomain(answer.citations, siteDomain);
-      
-      if (envFlags.isDevelopment) {
-        console.info(`[web-grounding] Filtered citations: ${answer.citations.length} from ${siteDomain} (was ${beforeFilterCount})`);
-      }
-    } catch (error) {
-      // If URL parsing fails, don't filter
-      console.warn(`[web-grounding] Could not filter citations: ${error}`);
-    }
-  }
-  
   return answer;
 }
 
@@ -351,7 +298,7 @@ function extractCitations(response: GenerateContentResponse): CitationEntry[] {
         }
 
         const context: GroundingContext | undefined =
-          chunk.retrievedContext ?? chunk.web ?? chunk.maps;
+          chunk.retrievedContext ?? chunk.maps;
         if (!context) {
           return;
         }
@@ -383,25 +330,6 @@ function extractCitations(response: GenerateContentResponse): CitationEntry[] {
   }
 
   return results;
-}
-
-function filterCitationsByDomain(
-  citations: CitationEntry[],
-  domain: string,
-): CitationEntry[] {
-  return citations.filter((citation) => {
-    if (!citation.uri) {
-      // Keep citations without URI (likely from file search)
-      return true;
-    }
-    try {
-      const citationUrl = new URL(citation.uri);
-      return citationUrl.hostname === domain;
-    } catch {
-      // If URI is not a valid URL, keep it (might be from file search)
-      return true;
-    }
-  });
 }
 
 export function normalizeCitations(

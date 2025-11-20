@@ -46,16 +46,6 @@ async function main(): Promise<void> {
       type: 'string',
       describe: 'Metadata filter expression to narrow retrieval results',
     })
-    .option('enableWebGrounding', {
-      alias: 'e',
-      type: 'boolean',
-      describe: 'Enable web grounding (web search)',
-    })
-    .option('webGroundingSite', {
-      alias: 'w',
-      type: 'string',
-      describe: 'Restrict web grounding to a specific site (e.g., wiki.red-fans.com)',
-    })
     .strict(false) // Allow unknown arguments for the question
     .help()
     .parseAsync();
@@ -67,8 +57,6 @@ async function main(): Promise<void> {
   if (process.env.NODE_ENV === 'development') {
     console.error('[debug] Parsed options:', {
       store: argv.store,
-      enableWebGrounding: argv.enableWebGrounding,
-      webGroundingSite: argv.webGroundingSite,
       question: question,
       positionalArgs: argv._,
     });
@@ -84,8 +72,6 @@ async function main(): Promise<void> {
       model: argv.model,
       topK: argv.topK,
       metadataFilter: argv.metadataFilter,
-      enableWebGrounding: argv.enableWebGrounding,
-      webGroundingSite: argv.webGroundingSite,
     });
 
     if (!result.answer) {
