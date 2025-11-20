@@ -331,13 +331,16 @@ export default function HomePageClient() {
     }
   };
 
-  async function askQuestion(questionText: string) {
+  async function askQuestion(questionText: string, questionIndex?: number | null) {
     const trimmed = questionText.trim();
 
     if (!trimmed) {
       setError(t('form.emptyQuestionError'));
       return;
     }
+
+    // Use the passed index parameter, or fall back to state (for backwards compatibility)
+    const indexToReplace = questionIndex !== undefined ? questionIndex : clickedQuestionIndex;
 
     setQuestion(trimmed);
     setLoading(true);
@@ -359,15 +362,17 @@ export default function HomePageClient() {
       setAnswer(payload);
       
       // Replace the clicked question with a new one if it was from the suggested questions
-      if (clickedQuestionIndex !== null) {
-        const currentIndex = clickedQuestionIndex;
+      if (indexToReplace !== null && indexToReplace !== undefined) {
+        const currentIndex = indexToReplace;
         setRandomQuestions(prev => {
           // Create a new array to ensure React detects the change
           const newQuestions = [...prev];
-          // Get a new question that's not in the current list (excluding the one being replaced)
+          // Get a new question that's not in the current list (excluding all current questions)
           const newQuestion = getRandomQuestionExcluding(locale, newQuestions);
+          // Replace the question at the clicked index
           newQuestions[currentIndex] = newQuestion;
-          return newQuestions;
+          // Return a new array reference to ensure React detects the change
+          return [...newQuestions];
         });
         setClickedQuestionIndex(null);
       }
@@ -386,8 +391,8 @@ export default function HomePageClient() {
   }
 
   function handleQuestionClick(questionText: string, index: number) {
-    setClickedQuestionIndex(index);
-    askQuestion(questionText);
+    // Pass the index directly to askQuestion instead of relying on state
+    askQuestion(questionText, index);
   }
 
   return (
@@ -463,7 +468,7 @@ export default function HomePageClient() {
             <div className={styles.questionsList}>
               {randomQuestions.map((q, index) => (
                 <button
-                  key={`${index}-${q.substring(0, 20)}`}
+                  key={`${index}-${q}`}
                   type="button"
                   onClick={() => handleQuestionClick(q, index)}
                   className={styles.questionButton}
